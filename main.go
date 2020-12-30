@@ -4,15 +4,17 @@ import (
 	"context"
 	"fmt"
 	"github.com/BurntSushi/toml"
+	"github.com/evookelj/inmap/emissions/slca"
 	"github.com/evookelj/inmap/emissions/slca/eieio"
 	"github.com/evookelj/inmap/emissions/slca/eieio/eieiorpc"
 	"github.com/evookelj/inmap/epi"
 	"github.com/pkg/errors"
+	"gonum.org/v1/gonum/mat"
 	"log"
 	"os"
 )
 
-const CONFIG = "/Users/emmavukelj/eio_reproduce/data/my_config.toml"
+const CONFIG = "${INMAP_SANDBOX_ROOT}/data/my_config.toml"
 
 func getEIOServer() (*eieio.Server, error) {
 	f, err := os.Open(CONFIG)
@@ -31,7 +33,9 @@ func getEIOServer() (*eieio.Server, error) {
 	return eieio.NewServer(&cfg, "", epi.NasariACS)
 }
 
-func getConsumptionBySCC(s *eieio.Server, dem eieiorpc.Demograph, year int32, loc eieiorpc.Location) ([]float64, error) {
+// Given an EIEIO server, get the consumption for the specified demographic and year
+// organized by SCC
+func getConsumptionBySCC(s *eieio.Server, dem eieiorpc.Demograph, year int32) ([]float64, error) {
 	totalConsRPC, err := s.CES.DemographicConsumption(context.Background(), &eieiorpc.DemographicConsumptionInput{
 		Year:      year,
 		Demograph: dem,
@@ -51,7 +55,8 @@ func getConsumptionBySCC(s *eieio.Server, dem eieiorpc.Demograph, year int32, lo
 	return consumptionBySCC, nil
 }
 
-func getDemand(s *eieio.Server, year int32, loc eieiorpc.Location) ([]float64, error) {
+// Get emissions by SCC for the specified year and location
+func getEmissionsBySCC(s *eieio.Server, year int32, loc eieiorpc.Location) ([]float64, error) {
 	demand, err := s.FinalDemand(context.TODO(), &eieiorpc.FinalDemandInput{
 		FinalDemandType: eieiorpc.FinalDemandType_AllDemand,
 		Year:            year,
@@ -61,10 +66,9 @@ func getDemand(s *eieio.Server, year int32, loc eieiorpc.Location) ([]float64, e
 		return nil, errors.Wrap(err, "error getting final demand")
 	}
 
-	// Step 3: Get emissions for that demand
 	emisRPC, err := s.EmissionsMatrix(context.Background(), &eieiorpc.EmissionsMatrixInput{
 		Demand:               demand,
-		Year:                 int32(year),
+		Year:                 year,
 		Location:             loc,
 		AQM:                  "isrm",
 	})
@@ -88,32 +92,44 @@ func getDemand(s *eieio.Server, year int32, loc eieiorpc.Location) ([]float64, e
 	return emisSCC, nil
 }
 
-func demAndEmissions() error {
+// Return a matrix of emissions by demographic and sector
+// along with the rows/columns for that matrix
+func demAndEmissions() (*mat.Dense, []eieiorpc.Demograph, []slca.SCC, error) {
 	s, err := getEIOServer()
 	if err != nil {
-		return errors.Wrap(err, "error creating EIO server")
+		return nil, nil, nil, errors.Wrap(err, "error creating EIO server")
 	}
 
 	var year int32 = 2015
 	loc := eieiorpc.Location_Domestic
-	emis, err := getDemand(s, year, loc)
+	dems := []eieiorpc.Demograph{eieiorpc.Demograph_Black, eieiorpc.Demograph_Hispanic, eieiorpc.Demograph_WhiteOther}
 
-	for _, dem := range []eieiorpc.Demograph{eieiorpc.Demograph_Black, eieiorpc.Demograph_Hispanic, eieiorpc.Demograph_WhiteOther} {
-		consumption, err := getConsumptionBySCC(s, dem, year, loc)
+	emis, err := getEmissionsBySCC(s, year, loc)
+
+	demAndSec := mat.NewDense(len(dems), len(s.SCCs), nil)
+	for demIdx, dem := range dems {
+		consumption, err := getConsumptionBySCC(s, dem, year)
 		if err != nil {
-			return errors.Wrap(err, "error getting consumption")
+			return nil, nil, nil, errors.Wrap(err, "error getting consumption")
 		}
 
-		for sectorIdx, sector := range s.SCCs {
-			log.Printf("Sector %v\tDemograph %v --> %v\n", sector, dem, consumption[sectorIdx]*emis[sectorIdx])
+		for sectorIdx, _ := range s.SCCs {
+			val := consumption[sectorIdx] * emis[sectorIdx]
+			demAndSec.Set(demIdx, sectorIdx, val)
 		}
 	}
 
-	return nil
+	return demAndSec, dems, s.SCCs, nil
 }
 
 func main() {
-	if err := demAndEmissions(); err != nil {
+	mat, dems, sectors, err := demAndEmissions()
+	if err != nil {
 		log.Fatalf(err.Error())
+	}
+
+	log.Println(sectors[:5])
+	for demIdx := 0; demIdx < len(dems); demIdx++ {
+		log.Println(mat.RawRowView(demIdx)[:5])
 	}
 }
