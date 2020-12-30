@@ -1,0 +1,199 @@
+SCCMapFile = "${INMAP_ROOT_DIR}/emissions/slca/eieio/data/scc-io_small_test.xlsx"
+SCCDescriptionFile = "${INMAP_ROOT_DIR}/emissions/aep/data/nei2014/sccdesc_2014platform_09sep2016_v0.txt"
+MemCacheSize = 1000
+
+IOAggregatorFile = "${INMAP_ROOT_DIR}/emissions/slca/eieio/data/aggregates.xlsx"
+SCCAggregatorFile = "${INMAP_ROOT_DIR}/emissions/slca/eieio/data/aggregates_small_test.xlsx"
+StaticDir = "${INMAP_ROOT_DIR}/emissions/slca/eieio"
+CESDataDir = "${INMAP_ROOT_DIR}/emissions/slca/eieio/ces"
+DefaultYear = 2011
+
+[Config]
+  Years = [2007, 2011, 2015]
+  DetailYear = 2007
+  UseSummary = "${INMAP_ROOT_DIR}/emissions/slca/eieio/data/IOUse_Before_Redefinitions_PRO_1997-2015_Summary.xlsx"
+  UseDetail = "${INMAP_ROOT_DIR}/emissions/slca/eieio/data/IOUse_Before_Redefinitions_PRO_2007_Detail.xlsx"
+  ImportsSummary = "${INMAP_ROOT_DIR}/emissions/slca/eieio/data/ImportMatrices_Before_Redefinitions_SUM_1997-2016.xlsx"
+  ImportsDetail = "${INMAP_ROOT_DIR}/emissions/slca/eieio/data/ImportMatrices_Before_Redefinitions_DET_2007.xlsx"
+  TotalRequirementsSummary = "${INMAP_ROOT_DIR}/emissions/slca/eieio/data/IxC_TR_1997-2015_Summary.xlsx"
+  TotalRequirementsDetail =     "${INMAP_ROOT_DIR}/emissions/slca/eieio/data/IxC_TR_2007_Detail.xlsx"
+  DomesticRequirementsSummary = "${INMAP_ROOT_DIR}/emissions/slca/eieio/data/IxC_Domestic_1997-2015_Summary.xlsx"
+  DomesticRequirementsDetail =  "${INMAP_ROOT_DIR}/emissions/slca/eieio/data/IxC_Domestic_2007_Detail.xlsx"
+
+[SpatialEIO]
+  EIEIOCache = ""
+
+  NEIBaseYear = 2014
+  NEITrends = "${INMAP_ROOT_DIR}/emissions/aep/aeputil/testdata/state_tier1_90-16.xlsx"
+  SCCReference = "${INMAP_ROOT_DIR}/emissions/aep/aeputil/testdata/SCCDownload-2017-0622-080147.csv"
+  ConcentrationCache = ""
+  HealthCache = ""
+  SpatialCache = ""
+  MaxCacheEntries=30
+  DefaultFIPS = "00000"
+
+  CensusPopColumns = ["TotalPop", "WhiteNoLat", "Black", "Native", "Asian", "Latino"]
+
+  FugitiveDustSectors = ["test_adj"]
+  [SpatialEIO.FugitiveDustAdjustment]
+    isrm = "${INMAP_ROOT_DIR}/emissions/slca/testdata/fugitive_dust_adj.csv"
+
+  [SpatialEIO.SRFiles]
+    isrm = "${INMAP_ROOT_DIR}/emissions/slca/testdata/testSR.ncf"
+
+
+  # CensusFile is the path to the shapefile holding population information.
+  [SpatialEIO.CensusFile]
+    2011 = "${INMAP_ROOT_DIR}/cmd/inmap/testdata/testPopulation.shp"
+    2014 = "${INMAP_ROOT_DIR}/cmd/inmap/testdata/testPopulation.shp"
+
+  # MortalityRateFile is the path to the shapefile containing baseline
+  # mortality rate data.
+  [SpatialEIO.MortalityRateFile]
+    2011 = "${INMAP_ROOT_DIR}/cmd/inmap/testdata/testMortalityRate.shp"
+    2014 = "${INMAP_ROOT_DIR}/cmd/inmap/testdata/testMortalityRate.shp"
+
+
+  # MortalityRateColumns maps the names of each input population group to the name
+  # of the field in MortalityRateFile that contains its respective baseline
+  # mortality rate, in units of deaths per year per 100,000 people. Only mortality
+  # rates used in output variable expressions need to be included here.
+  [SpatialEIO.MortalityRateColumns]
+    AllCause = "TotalPop"
+    WhNoLMort = "WhiteNoLat"
+    BlackMort = "Black"
+    AsianMort = "Native"
+    NativeMort = "Asian"
+    LatinoMort = "Latino"
+
+[SpatialEIO.SpatialConfig]
+  SrgSpec = "${INMAP_ROOT_DIR}/emissions/aep/aeputil/testdata/surrogate_specification.csv"
+  SrgSpecType = "SMOKE"
+  SrgShapefileDirectory = "${INMAP_ROOT_DIR}/emissions/aep/testdata/"
+  SCCExactMatch = false
+  GridRef = [
+    "${INMAP_ROOT_DIR}/emissions/aep/aeputil/testdata/gridref.txt",
+  ]
+  OutputSR = "+proj=lcc +lat_1=33.000000 +lat_2=45.000000 +lat_0=40.000000 +lon_0=-97.000000 +x_0=0 +y_0=0 +a=6370997.000000 +b=6370997.000000 +to_meter=1"
+  InputSR = "+proj=longlat"
+  SimplifyTolerance = 0.0
+  SpatialCache=""
+  GridName = "InMAP"
+
+
+[SpatialEIO.InventoryConfig]
+  InputUnits = "tons"
+  SrgSpec = "${INMAP_ROOT_DIR}/emissions/aep/aeputil/testdata/surrogate_specification.csv"
+  SrgSpecType = "SMOKE"
+  SrgShapefileDirectory = "${INMAP_ROOT_DIR}/emissions/aep/testdata/"
+  SCCExactMatch = false
+  GridRef = [
+    "${INMAP_ROOT_DIR}/emissions/aep/aeputil/testdata/gridref.txt",
+  ]
+
+
+  [SpatialEIO.InventoryConfig.NEIFiles]
+    test = [
+      "${INMAP_ROOT_DIR}/emissions/slca/eieio/data/testemis.csv",
+    ]
+
+
+  [SpatialEIO.InventoryConfig.PolsToKeep]
+  	[SpatialEIO.InventoryConfig.PolsToKeep.VOC]
+  		SpecType ="VOC"
+  	[SpatialEIO.InventoryConfig.PolsToKeep.PM25-PRI]
+  		SpecType= "PM2.5"
+  	[SpatialEIO.InventoryConfig.PolsToKeep.PM2_5]
+  		SpecType= "PM2.5"
+  	[SpatialEIO.InventoryConfig.PolsToKeep.NOX]
+  		SpecType= "NOx"
+  	[SpatialEIO.InventoryConfig.PolsToKeep.NH3.SpecNames]
+  		Names= ["NH3"]
+  	[SpatialEIO.InventoryConfig.PolsToKeep.SO2.SpecNames]
+      Names= ["SOx"]
+    [SpatialEIO.InventoryConfig.PolsToKeep.XYL]
+      SpecType ="VOC"
+    [SpatialEIO.InventoryConfig.PolsToKeep.UNR]
+      SpecType ="VOC"
+    [SpatialEIO.InventoryConfig.PolsToKeep.TOL]
+      SpecType ="VOC"
+    [SpatialEIO.InventoryConfig.PolsToKeep.TERP]
+      SpecType ="VOC"
+    [SpatialEIO.InventoryConfig.PolsToKeep.PAR]
+      SpecType ="VOC"
+    [SpatialEIO.InventoryConfig.PolsToKeep.OLE]
+      SpecType ="VOC"
+    [SpatialEIO.InventoryConfig.PolsToKeep.NVOL]
+      SpecType ="VOC"
+    [SpatialEIO.InventoryConfig.PolsToKeep.MEOH]
+      SpecType ="VOC"
+    [SpatialEIO.InventoryConfig.PolsToKeep.ISOP]
+      SpecType ="VOC"
+    [SpatialEIO.InventoryConfig.PolsToKeep.IOLE]
+      SpecType ="VOC"
+    [SpatialEIO.InventoryConfig.PolsToKeep.FORM]
+      SpecType ="VOC"
+    [SpatialEIO.InventoryConfig.PolsToKeep.ETOH]
+      SpecType ="VOC"
+    [SpatialEIO.InventoryConfig.PolsToKeep.ETHA]
+      SpecType ="VOC"
+    [SpatialEIO.InventoryConfig.PolsToKeep.ETH]
+      SpecType ="VOC"
+
+  [SpatialEIO.EvaluationInventoryConfig]
+    InputUnits = "tons"
+    SrgSpec = "${INMAP_ROOT_DIR}/emissions/aep/aeputil/testdata/surrogate_specification.csv"
+    SrgSpecType = "SMOKE"
+    SrgShapefileDirectory = "${INMAP_ROOT_DIR}/emissions/aep/testdata/"
+    SCCExactMatch = false
+    GridRef = [
+      "${INMAP_ROOT_DIR}/emissions/aep/aeputil/testdata/gridref.txt",
+    ]
+
+
+    [SpatialEIO.EvaluationInventoryConfig.NEIFiles]
+      test = [
+        "${INMAP_ROOT_DIR}/emissions/slca/eieio/data/testemis.csv",
+      ]
+
+    [SpatialEIO.EvaluationInventoryConfig.PolsToKeep]
+    	[SpatialEIO.EvaluationInventoryConfig.PolsToKeep.VOC]
+    		SpecType ="VOC"
+    	[SpatialEIO.EvaluationInventoryConfig.PolsToKeep.PM25-PRI]
+    		SpecType= "PM2.5"
+    	[SpatialEIO.EvaluationInventoryConfig.PolsToKeep.PM2_5]
+    		SpecType= "PM2.5"
+    	[SpatialEIO.EvaluationInventoryConfig.PolsToKeep.NOX]
+    		SpecType= "NOx"
+    	[SpatialEIO.EvaluationInventoryConfig.PolsToKeep.NH3.SpecNames]
+    		Names= ["NH3"]
+    	[SpatialEIO.EvaluationInventoryConfig.PolsToKeep.SO2.SpecNames]
+        Names= ["SOx"]
+      [SpatialEIO.EvaluationInventoryConfig.PolsToKeep.XYL]
+        SpecType ="VOC"
+      [SpatialEIO.EvaluationInventoryConfig.PolsToKeep.UNR]
+        SpecType ="VOC"
+      [SpatialEIO.EvaluationInventoryConfig.PolsToKeep.TOL]
+        SpecType ="VOC"
+      [SpatialEIO.EvaluationInventoryConfig.PolsToKeep.TERP]
+        SpecType ="VOC"
+      [SpatialEIO.EvaluationInventoryConfig.PolsToKeep.PAR]
+        SpecType ="VOC"
+      [SpatialEIO.EvaluationInventoryConfig.PolsToKeep.OLE]
+        SpecType ="VOC"
+      [SpatialEIO.EvaluationInventoryConfig.PolsToKeep.NVOL]
+        SpecType ="VOC"
+      [SpatialEIO.EvaluationInventoryConfig.PolsToKeep.MEOH]
+        SpecType ="VOC"
+      [SpatialEIO.EvaluationInventoryConfig.PolsToKeep.ISOP]
+        SpecType ="VOC"
+      [SpatialEIO.EvaluationInventoryConfig.PolsToKeep.IOLE]
+        SpecType ="VOC"
+      [SpatialEIO.EvaluationInventoryConfig.PolsToKeep.FORM]
+        SpecType ="VOC"
+      [SpatialEIO.EvaluationInventoryConfig.PolsToKeep.ETOH]
+        SpecType ="VOC"
+      [SpatialEIO.EvaluationInventoryConfig.PolsToKeep.ETHA]
+        SpecType ="VOC"
+      [SpatialEIO.EvaluationInventoryConfig.PolsToKeep.ETH]
+        SpecType ="VOC"
