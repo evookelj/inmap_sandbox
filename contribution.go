@@ -57,16 +57,7 @@ func getConsumptionBySCC(s *eieio.Server, dem *eieiorpc.Demograph, year int32) (
 }
 
 // Get emissions by SCC for the specified year and location
-func getEmissionsBySCC(s *eieio.Server, year int32, loc eieiorpc.Location) (*mat.VecDense, error) {
-	demand, err := s.FinalDemand(context.TODO(), &eieiorpc.FinalDemandInput{
-		FinalDemandType: eieiorpc.FinalDemandType_AllDemand,
-		Year:            year,
-		Location:        loc,
-	})
-	if err != nil {
-		return nil, errors.Wrap(err, "error getting final demand")
-	}
-
+func getEmissionsBySCC(demand *eieiorpc.Vector, s *eieio.Server, year int32, loc eieiorpc.Location) (*mat.VecDense, error) {
 	emisRPC, err := s.EmissionsMatrix(context.Background(), &eieiorpc.EmissionsMatrixInput{
 		Demand:               demand,
 		Year:                 year,
@@ -98,11 +89,8 @@ func getEmissionsBySCC(s *eieio.Server, year int32, loc eieiorpc.Location) (*mat
 
 // Return a matrix of emissions by demographic and sector
 // along with the rows/columns for that matrix
-func demAndEmissions(s *eieio.Server, dems []*eieiorpc.Demograph) (*mat.Dense, []slca.SCC, error) {
-	var year int32 = 2015
-	loc := eieiorpc.Location_Domestic
-
-	emis, err := getEmissionsBySCC(s, year, loc)
+func demAndEmissions(s *eieio.Server, demand *eieiorpc.Vector, dems []*eieiorpc.Demograph, year int32, loc eieiorpc.Location) (*mat.Dense, []slca.SCC, error) {
+	emis, err := getEmissionsBySCC(demand, s, year, loc)
 	if err != nil {
 		return nil, nil, errors.Wrap(err, "error getting emissions by SCC")
 	}
@@ -123,6 +111,69 @@ func demAndEmissions(s *eieio.Server, dems []*eieiorpc.Demograph) (*mat.Dense, [
 	}
 
 	return demAndSec, s.SCCs, nil
+}
+
+func getExposureByPopulation(s *eieio.Server, year int32, loc eieiorpc.Location, demand *eieiorpc.Vector) (*map[string]float64, error) {
+	vec, err := s.SpatialEIO.Concentrations(context.Background(), &eieiorpc.ConcentrationInput{
+		Demand:    demand,
+		Pollutant: eieiorpc.Pollutant_TotalPM25,
+		Year:      year,
+		Location:  loc,
+		AQM:       "isrm",
+	})
+	conc := vec.Data
+	if err != nil {
+		return nil, err
+	}
+
+	populationNamesOutput, err := s.Populations(context.Background(), nil)
+	if err != nil {
+		return nil, err
+	}
+	popNames := populationNamesOutput.Names
+
+	populationGridsByPopName := make(map[string][]float64)
+	for _, popName := range popNames {
+		popOutputStruct, err := s.CSTConfig.PopulationIncidence(context.Background(), &eieiorpc.PopulationIncidenceInput{
+			Year:       year,
+			Population: popName,
+			// these two don't matter b/c we just care about population count
+			// TODO: Export method that just gets pop counts, don't waste computing on incidence
+			HR:         "NasariACS",
+			AQM:        "isrm",
+		})
+		if err != nil {
+			return nil, err
+		}
+
+		pop := popOutputStruct.GetPopulation()
+		if len(pop) != len(conc) {
+			return nil, fmt.Errorf("expected len(population)=len(concentrations); got %d != %d", len(pop), len(conc))
+		}
+		populationGridsByPopName[popName] = pop
+	}
+
+	popTotals := make(map[string]float64)
+	for _, pop := range popNames {
+		popTotals[pop] = 0
+	}
+
+	exposureByPop := make(map[string]float64)
+	for gridIdx, concentrationAmt := range conc {
+		log.Printf("\t[Grid %d] [Concentration=%.2f]", gridIdx, concentrationAmt)
+		for _, popName := range popNames {
+			numIndividuals := populationGridsByPopName[popName][gridIdx]
+			popTotals[popName] += numIndividuals
+			exposureByPop[popName] += numIndividuals * concentrationAmt
+			log.Printf("\t\t[Population %s] %.2f ppl --> %.2f exposure", popName, numIndividuals, numIndividuals * concentrationAmt)
+		}
+	}
+
+	for popName, exposure := range exposureByPop {
+		log.Printf("Pop name: %s\tExposure: %.2f", popName, exposure)
+	}
+
+	return nil, nil
 }
 
 func emissionsAndDemTesting() error {
@@ -150,7 +201,19 @@ func emissionsAndDemTesting() error {
 		return errors.Wrap(err, "error creating EIO server")
 	}
 
-	emisByDemAndSCC, _, err := demAndEmissions(s, dems)
+	var year int32 = 2015
+	loc := eieiorpc.Location_Domestic
+
+	demand, err := s.FinalDemand(context.TODO(), &eieiorpc.FinalDemandInput{
+		FinalDemandType: eieiorpc.FinalDemandType_AllDemand,
+		Year:            year,
+		Location:        loc,
+	})
+	if err != nil {
+		return errors.Wrap(err, "error getting final demand")
+	}
+
+	emisByDemAndSCC, _, err := demAndEmissions(s, demand, dems, year, loc)
 	if err != nil {
 		return err
 	}
@@ -167,6 +230,12 @@ func emissionsAndDemTesting() error {
 		}
 		log.Printf("Index: %d\tTotal emissions (pop-adjusted): %.2f", demIdx, demTotalEmissions)
 	}
+
+	_, err = getExposureByPopulation(s, year, loc, demand)
+	if err != nil {
+		return err
+	}
+
 	return nil
 }
 
