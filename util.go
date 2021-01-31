@@ -1,10 +1,32 @@
 package main
 
 import (
+	"github.com/BurntSushi/toml"
 	"github.com/evookelj/inmap/emissions/slca/eieio"
 	"github.com/evookelj/inmap/emissions/slca/eieio/eieiorpc"
+	"github.com/evookelj/inmap/epi"
 	"gonum.org/v1/gonum/mat"
+	"os"
 )
+
+var CONFIG = os.ExpandEnv("${INMAP_SANDBOX_ROOT}/data/my_config.toml")
+
+func getEIOServer() (*eieio.Server, error) {
+	f, err := os.Open(CONFIG)
+	if err != nil {
+		return nil, err
+	}
+	defer f.Close()
+
+	var cfg eieio.ServerConfig
+	_, err = toml.DecodeReader(f, &cfg)
+	if err != nil {
+		return nil, err
+	}
+	cfg.Config.Years = []eieio.Year{2003, 2004, 2005, 2006, 2007, 2008, 2009, 2010, 2011, 2012, 2013, 2014, 2015}
+
+	return eieio.NewServer(&cfg, "", epi.NasariACS)
+}
 
 func array2vec(d []float64) *mat.VecDense {
 if len(d) == 0 {

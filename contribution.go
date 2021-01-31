@@ -3,36 +3,14 @@ package main
 import (
 	"context"
 	"fmt"
-	"github.com/BurntSushi/toml"
 	"github.com/evookelj/inmap/emissions/slca"
 	"github.com/evookelj/inmap/emissions/slca/eieio"
 	"github.com/evookelj/inmap/emissions/slca/eieio/ces"
 	"github.com/evookelj/inmap/emissions/slca/eieio/eieiorpc"
-	"github.com/evookelj/inmap/epi"
 	"github.com/pkg/errors"
 	"gonum.org/v1/gonum/mat"
 	"log"
-	"os"
 )
-
-var CONFIG = os.ExpandEnv("${INMAP_SANDBOX_ROOT}/data/my_config.toml")
-
-func getEIOServer() (*eieio.Server, error) {
-	f, err := os.Open(CONFIG)
-	if err != nil {
-		return nil, err
-	}
-	defer f.Close()
-
-	var cfg eieio.ServerConfig
-	_, err = toml.DecodeReader(f, &cfg)
-	if err != nil {
-		return nil, err
-	}
-	cfg.Config.Years = []eieio.Year{2003, 2004, 2005, 2006, 2007, 2008, 2009, 2010, 2011, 2012, 2013, 2014, 2015}
-
-	return eieio.NewServer(&cfg, "", epi.NasariACS)
-}
 
 // Given an EIEIO server, get the consumption for the specified demographic and year
 // organized by SCC
@@ -113,70 +91,9 @@ func demAndEmissions(s *eieio.Server, demand *eieiorpc.Vector, dems []*eieiorpc.
 	return demAndSec, s.SCCs, nil
 }
 
-func getExposureByPopulation(s *eieio.Server, year int32, loc eieiorpc.Location, demand *eieiorpc.Vector) (*map[string]float64, error) {
-	vec, err := s.SpatialEIO.Concentrations(context.Background(), &eieiorpc.ConcentrationInput{
-		Demand:    demand,
-		Pollutant: eieiorpc.Pollutant_TotalPM25,
-		Year:      year,
-		Location:  loc,
-		AQM:       "isrm",
-	})
-	conc := vec.Data
-	if err != nil {
-		return nil, err
-	}
 
-	populationNamesOutput, err := s.Populations(context.Background(), nil)
-	if err != nil {
-		return nil, err
-	}
-	popNames := populationNamesOutput.Names
 
-	populationGridsByPopName := make(map[string][]float64)
-	for _, popName := range popNames {
-		popOutputStruct, err := s.CSTConfig.PopulationIncidence(context.Background(), &eieiorpc.PopulationIncidenceInput{
-			Year:       year,
-			Population: popName,
-			// these two don't matter b/c we just care about population count
-			// TODO: Export method that just gets pop counts, don't waste computing on incidence
-			HR:         "NasariACS",
-			AQM:        "isrm",
-		})
-		if err != nil {
-			return nil, err
-		}
-
-		pop := popOutputStruct.GetPopulation()
-		if len(pop) != len(conc) {
-			return nil, fmt.Errorf("expected len(population)=len(concentrations); got %d != %d", len(pop), len(conc))
-		}
-		populationGridsByPopName[popName] = pop
-	}
-
-	popTotals := make(map[string]float64)
-	for _, pop := range popNames {
-		popTotals[pop] = 0
-	}
-
-	exposureByPop := make(map[string]float64)
-	for gridIdx, concentrationAmt := range conc {
-		log.Printf("\t[Grid %d] [Concentration=%.2f]", gridIdx, concentrationAmt)
-		for _, popName := range popNames {
-			numIndividuals := populationGridsByPopName[popName][gridIdx]
-			popTotals[popName] += numIndividuals
-			exposureByPop[popName] += numIndividuals * concentrationAmt
-			log.Printf("\t\t[Population %s] %.2f ppl --> %.2f exposure", popName, numIndividuals, numIndividuals * concentrationAmt)
-		}
-	}
-
-	for popName, exposure := range exposureByPop {
-		log.Printf("Pop name: %s\tExposure: %.2f", popName, exposure)
-	}
-
-	return nil, nil
-}
-
-func emissionsAndDemTesting() error {
+func contributionSideTest(s *eieio.Server, year int32, loc eieiorpc.Location, demand *eieiorpc.Vector) error {
 	/*
 	var eths []eieiorpc.Demograph
 	for val := 0; val < len(eieiorpc.Ethnicity_value); val++ {
@@ -195,23 +112,6 @@ func emissionsAndDemTesting() error {
 		}
 	}
 	dems := deciles
-
-	s, err := getEIOServer()
-	if err != nil {
-		return errors.Wrap(err, "error creating EIO server")
-	}
-
-	var year int32 = 2015
-	loc := eieiorpc.Location_Domestic
-
-	demand, err := s.FinalDemand(context.TODO(), &eieiorpc.FinalDemandInput{
-		FinalDemandType: eieiorpc.FinalDemandType_AllDemand,
-		Year:            year,
-		Location:        loc,
-	})
-	if err != nil {
-		return errors.Wrap(err, "error getting final demand")
-	}
 
 	emisByDemAndSCC, _, err := demAndEmissions(s, demand, dems, year, loc)
 	if err != nil {
@@ -264,11 +164,4 @@ func populationAdjust(s *eieio.Server, emisByDemAndSCC *mat.Dense, dems []*eieio
 		}
 	}
 	return nil
-}
-
-func main() {
-	err := emissionsAndDemTesting()
-	if err != nil {
-		log.Fatalf(err.Error())
-	}
 }
