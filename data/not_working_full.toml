@@ -1,9 +1,6 @@
-# SCCMapFile = "${INMAP_ROOT_DIR}/emissions/slca/eieio/data/scc-io_small_test.xlsx"
 SCCMapFile = "${INMAP_ROOT_DIR}/emissions/slca/eieio/data/scc-io.xlsx"
 SCCDescriptionFile = "${INMAP_ROOT_DIR}/emissions/aep/data/nei2014/sccdesc_2014platform_09sep2016_v0.txt"
 
-# IOAggregatorFile = "${INMAP_ROOT_DIR}/emissions/slca/eieio/data/aggregates_small_test.xlsx"
-# SCCAggregatorFile = "${INMAP_ROOT_DIR}/emissions/slca/eieio/data/aggregates_small_test.xlsx"
 IOAggregatorFile = "${INMAP_ROOT_DIR}/emissions/slca/eieio/data/aggregates.xlsx"
 SCCAggregatorFile = "${INMAP_ROOT_DIR}/emissions/slca/eieio/data/aggregates.xlsx"
 StaticDir = "${INMAP_ROOT_DIR}/emissions/slca/eieio"
@@ -25,13 +22,13 @@ DefaultYear = 2015
 [SpatialEIO]
   EIEIOCache = "${SLCASpatialCache}/bea"
 
-  SRCacheSize = 96000 # 480000 # This will take about 100GB of RAM. Reduce the number to decrease RAM requirements.
+  SRCacheSize = 480000 # This will take about 100GB of RAM. Reduce the number to decrease RAM requirements.
 
   CensusPopColumns = ["all", "white", "latino", "native", "asian", "black"]
 
   NEIBaseYear = 2014
-  NEITrends = "${INMAP_ROOT_DIR}/emissions/aep/aeputil/testdata/state_tier1_90-16.xlsx"
-  SCCReference = "${INMAP_ROOT_DIR}/emissions/aep/aeputil/testdata/SCCDownload-2017-0622-080147.csv"
+  NEITrends = "${INMAP_SANDBOX_ROOT}/data/national_tier1_caps.xlsx"
+  SCCReference = "${INMAP_SANDBOX_ROOT}/data/SCCDownload-2021-0309-123938.csv"
   ConcentrationCache = "${SLCASpatialCache}/concentration"
   HealthCache = "${SLCASpatialCache}/health"
   SpatialCache = "${SLCASpatialCache}/spatial"
@@ -51,18 +48,16 @@ DefaultYear = 2015
     apsca_q3 = "apsca_dust_adj.csv"
     apsca_q4 = "apsca_dust_adj.csv"
   [SpatialEIO.SRFiles]
-    isrm = "${INMAP_ROOT_DIR}/emissions/slca/testdata/testSR.ncf"
-    # isrm = "data/isrmv121/isrm_v1.2.1.ncf"
+    isrm = "data/isrmv121/isrm_v1.2.1.ncf"
 
 [SpatialEIO.CensusFile]
-2011 = "${INMAP_ROOT_DIR}/cmd/inmap/testdata/testPopulation.shp"
-2014 = "${INMAP_ROOT_DIR}/cmd/inmap/testdata/testPopulation.shp"
+2015 = "${INMAP_ROOT_DIR}/cmd/inmap/testdata/testPopulation.shp"
 
 # MortalityRateFile is the path to the shapefile containing baseline
 # mortality rate data.
+# We're not concerned with mortality so this should be fine
 [SpatialEIO.MortalityRateFile]
-2011 = "${INMAP_ROOT_DIR}/cmd/inmap/testdata/testMortalityRate.shp"
-2014 = "${INMAP_ROOT_DIR}/cmd/inmap/testdata/testMortalityRate.shp"
+2015 = "${INMAP_ROOT_DIR}/cmd/inmap/testdata/testMortalityRate.shp"
 
 [SpatialEIO.MortalityRateColumns]
   all = "all"
@@ -72,38 +67,22 @@ DefaultYear = 2015
   asian = "asian"
   native = "native"
 
-# TEST ONE:
  [SpatialEIO.SpatialConfig]
- SrgSpec = "${INMAP_ROOT_DIR}/emissions/aep/aeputil/testdata/surrogate_specification.csv"
- SrgSpecType = "SMOKE"
- SrgShapefileDirectory = "${INMAP_ROOT_DIR}/emissions/aep/testdata/"
- SCCExactMatch = false
- GridRef = [
-     "${INMAP_ROOT_DIR}/emissions/aep/aeputil/testdata/gridref.txt",
- ]
- OutputSR = "+proj=lcc +lat_1=33.000000 +lat_2=45.000000 +lat_0=40.000000 +lon_0=-97.000000 +x_0=0 +y_0=0 +a=6370997.000000 +b=6370997.000000 +to_meter=1"
- InputSR = "+proj=longlat"
- SimplifyTolerance = 0.0
- SpatialCache=""
- GridName = "InMAP"
-
-# REAL ONE:
-# [SpatialEIO.SpatialConfig]
-#   SrgSpec = "${INMAP_ROOT_DIR}/emissions/aep/data/nei2014/surrogate_specification_2014.csv"
-#   SrgSpecType = "SMOKE"
-#   SrgShapefileDirectory = "$nei2014Dir"
-#   SCCExactMatch = true
-#   GridRef = [
-#     "$nei2014Dir/ge_dat/gridding/agref_us_2014platform_08nov2016_nf_v3.txt",
-#     "$nei2014Dir/ge_dat/gridding/amgref_can2010_mex2010v3_12US1_26aug2016_nf_v9.txt",
-#     "$nei2014Dir/ge_dat/gridding/mgref_onroad_us_2014platform_03oct2016_nf_v2.txt",
-#    ]
-#    OutputSR = "+proj=lcc +lat_1=33.000000 +lat_2=45.000000 +lat_0=40.000000 +lon_0=-97.000000 +x_0=0 +y_0=0 +a=6370997.000000 +b=6370997.000000 +to_meter=1"
-#    InputSR = "+proj=longlat"
-#    SimplifyTolerance = 0.0
-#    SpatialCache="${SLCASpatialCache}/nei"
-#    MaxCacheEntries=30000
-#    GridName = "InMAP"
+   SrgSpec = "${INMAP_ROOT_DIR}/emissions/aep/data/nei2014/surrogate_specification_2014.csv"
+   SrgSpecType = "SMOKE"
+   SrgShapefileDirectory = "$nei2014Dir"
+   SCCExactMatch = true
+   GridRef = [
+     "$nei2014Dir/ge_dat/gridding/agref_us_2014platform_08nov2016_nf_v3.txt",
+     "$nei2014Dir/ge_dat/gridding/amgref_can2010_mex2010v3_12US1_26aug2016_nf_v9.txt",
+     "$nei2014Dir/ge_dat/gridding/mgref_onroad_us_2014platform_03oct2016_nf_v2.txt",
+    ]
+    OutputSR = "+proj=lcc +lat_1=33.000000 +lat_2=45.000000 +lat_0=40.000000 +lon_0=-97.000000 +x_0=0 +y_0=0 +a=6370997.000000 +b=6370997.000000 +to_meter=1"
+    InputSR = "+proj=longlat"
+    SimplifyTolerance = 0.0
+    SpatialCache="${SLCASpatialCache}/nei"
+    MaxCacheEntries=30000
+    GridName = "InMAP"
 
 
 [SpatialEIO.InventoryConfig]
