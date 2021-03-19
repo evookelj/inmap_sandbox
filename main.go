@@ -11,12 +11,14 @@ const YEAR int32 = 2015
 const LOC = eieiorpc.Location_Domestic
 
 func mainHelper() error {
+	ctx := context.Background()
+
 	s, err := getEIOServer()
 	if err != nil {
 		return errors.Wrap(err, "error creating EIO server")
 	}
 
-	demand, err := s.FinalDemand(context.Background(), &eieiorpc.FinalDemandInput{
+	demand, err := s.FinalDemand(ctx, &eieiorpc.FinalDemandInput{
 		FinalDemandType: eieiorpc.FinalDemandType_AllDemand,
 		Year:            YEAR,
 		Location:        LOC,
@@ -25,18 +27,20 @@ func mainHelper() error {
 		return errors.Wrap(err, "error getting final demand")
 	}
 
-	err = contributionSideTest(s, YEAR, LOC, demand)
+	err = contributionSideTest(ctx, s, YEAR, LOC, demand)
 	if err != nil {
 		return err
 	}
 
-	exposureByPop, err := getExposureByPopulation(s, YEAR, LOC, demand)
+	/*
+	exposureByPop, err := getExposureByPopulation(ctx, s, YEAR, LOC, demand)
 	if err != nil {
 		return err
 	}
 	for popName, exposure := range *exposureByPop {
 		log.Printf("Pop name: %s\tExposure: %.2f", popName, exposure)
 	}
+	 */
 
 	return nil
 }

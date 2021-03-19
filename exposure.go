@@ -8,8 +8,8 @@ import (
 	"log"
 )
 
-func getExposureByPopulation(s *eieio.Server, year int32, loc eieiorpc.Location, demand *eieiorpc.Vector) (*map[string]float64, error) {
-	vec, err := s.SpatialEIO.Concentrations(context.Background(), &eieiorpc.ConcentrationInput{
+func getExposureByPopulation(ctx context.Context, s *eieio.Server, year int32, loc eieiorpc.Location, demand *eieiorpc.Vector) (*map[string]float64, error) {
+	vec, err := s.SpatialEIO.Concentrations(ctx, &eieiorpc.ConcentrationInput{
 		Demand:    demand,
 		Pollutant: eieiorpc.Pollutant_TotalPM25,
 		Year:      year,
@@ -21,7 +21,7 @@ func getExposureByPopulation(s *eieio.Server, year int32, loc eieiorpc.Location,
 		return nil, err
 	}
 
-	populationNamesOutput, err := s.Populations(context.Background(), nil)
+	populationNamesOutput, err := s.Populations(ctx, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -29,7 +29,7 @@ func getExposureByPopulation(s *eieio.Server, year int32, loc eieiorpc.Location,
 
 	populationGridsByPopName := make(map[string][]float64)
 	for _, popName := range popNames {
-		popOutputStruct, err := s.CSTConfig.PopulationIncidence(context.Background(), &eieiorpc.PopulationIncidenceInput{
+		popOutputStruct, err := s.CSTConfig.PopulationIncidence(ctx, &eieiorpc.PopulationIncidenceInput{
 			Year:       year,
 			Population: popName,
 			// these two don't matter b/c we just care about population count

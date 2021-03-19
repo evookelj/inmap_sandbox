@@ -14,8 +14,8 @@ import (
 
 // Given an EIEIO server, get the consumption for the specified demographic and year
 // organized by SCC
-func getConsumptionBySCC(s *eieio.Server, dem *eieiorpc.Demograph, year int32) (*mat.VecDense, error) {
-	totalConsRPC, err := s.CES.DemographicConsumption(context.Background(), &eieiorpc.DemographicConsumptionInput{
+func getConsumptionBySCC(ctx context.Context, s *eieio.Server, dem *eieiorpc.Demograph, year int32) (*mat.VecDense, error) {
+	totalConsRPC, err := s.CES.DemographicConsumption(ctx, &eieiorpc.DemographicConsumptionInput{
 		Year:      year,
 		Demograph: dem,
 	})
@@ -35,8 +35,8 @@ func getConsumptionBySCC(s *eieio.Server, dem *eieiorpc.Demograph, year int32) (
 }
 
 // Get emissions by SCC for the specified year and location
-func getEmissionsBySCC(demand *eieiorpc.Vector, s *eieio.Server, year int32, loc eieiorpc.Location) (*mat.VecDense, error) {
-	emisRPC, err := s.EmissionsMatrix(context.Background(), &eieiorpc.EmissionsMatrixInput{
+func getEmissionsBySCC(ctx context.Context, demand *eieiorpc.Vector, s *eieio.Server, year int32, loc eieiorpc.Location) (*mat.VecDense, error) {
+	emisRPC, err := s.EmissionsMatrix(ctx, &eieiorpc.EmissionsMatrixInput{
 		Demand:               demand,
 		Year:                 year,
 		Location:             loc,
@@ -51,7 +51,6 @@ func getEmissionsBySCC(demand *eieiorpc.Vector, s *eieio.Server, year int32, loc
 		return nil, fmt.Errorf("expected emissions to have #SCC %d columns, got %d", len(s.SCCs), c)
 	}
 
-	// METHOD A: USE VEC
 	emisSCC := make([]float64, len(s.SCCs))
 	for sectorIdx := range s.SCCs {
 		emissionsForSector := emis.ColView(sectorIdx)
@@ -67,15 +66,15 @@ func getEmissionsBySCC(demand *eieiorpc.Vector, s *eieio.Server, year int32, loc
 
 // Return a matrix of emissions by demographic and sector
 // along with the rows/columns for that matrix
-func demAndEmissions(s *eieio.Server, demand *eieiorpc.Vector, dems []*eieiorpc.Demograph, year int32, loc eieiorpc.Location) (*mat.Dense, []slca.SCC, error) {
-	emis, err := getEmissionsBySCC(demand, s, year, loc)
+func demAndEmissions(ctx context.Context, s *eieio.Server, demand *eieiorpc.Vector, dems []*eieiorpc.Demograph, year int32, loc eieiorpc.Location) (*mat.Dense, []slca.SCC, error) {
+	emis, err := getEmissionsBySCC(ctx, demand, s, year, loc)
 	if err != nil {
 		return nil, nil, errors.Wrap(err, "error getting emissions by SCC")
 	}
 
 	demAndSec := mat.NewDense(len(dems), len(s.SCCs), nil)
 	for demIdx := range dems {
-		consumption, err := getConsumptionBySCC(s, dems[demIdx], year)
+		consumption, err := getConsumptionBySCC(ctx, s, dems[demIdx], year)
 		if err != nil {
 			return nil, nil, errors.Wrap(err, "error getting consumption")
 		}
@@ -93,7 +92,7 @@ func demAndEmissions(s *eieio.Server, demand *eieiorpc.Vector, dems []*eieiorpc.
 
 
 
-func contributionSideTest(s *eieio.Server, year int32, loc eieiorpc.Location, demand *eieiorpc.Vector) error {
+func contributionSideTest(ctx context.Context, s *eieio.Server, year int32, loc eieiorpc.Location, demand *eieiorpc.Vector) error {
 	/*
 	var eths []eieiorpc.Demograph
 	for val := 0; val < len(eieiorpc.Ethnicity_value); val++ {
@@ -113,7 +112,7 @@ func contributionSideTest(s *eieio.Server, year int32, loc eieiorpc.Location, de
 	}
 	dems := deciles
 
-	emisByDemAndSCC, _, err := demAndEmissions(s, demand, dems, year, loc)
+	emisByDemAndSCC, _, err := demAndEmissions(ctx, s, demand, dems, year, loc)
 	if err != nil {
 		return err
 	}
@@ -129,11 +128,6 @@ func contributionSideTest(s *eieio.Server, year int32, loc eieiorpc.Location, de
 			demTotalEmissions += emisForSCCForDem
 		}
 		log.Printf("Index: %d\tTotal emissions (pop-adjusted): %.2f", demIdx, demTotalEmissions)
-	}
-
-	_, err = getExposureByPopulation(s, year, loc, demand)
-	if err != nil {
-		return err
 	}
 
 	return nil
