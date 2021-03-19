@@ -48,7 +48,7 @@ DefaultYear = 2015
     apsca_q3 = "apsca_dust_adj.csv"
     apsca_q4 = "apsca_dust_adj.csv"
   [SpatialEIO.SRFiles]
-    isrm = "data/isrmv121/isrm_v1.2.1.ncf"
+    isrm = "${INMAP_SANDBOX_ROOT}/data/isrm_v1.2.1.ncf"
 
 [SpatialEIO.CensusFile]
 2015 = "${INMAP_ROOT_DIR}/cmd/inmap/testdata/testPopulation.shp"
