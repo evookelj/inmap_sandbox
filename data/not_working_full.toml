@@ -27,7 +27,7 @@ DefaultYear = 2015
   CensusPopColumns = ["all", "white", "latino", "native", "asian", "black"]
 
   NEIBaseYear = 2014
-  NEITrends = "${INMAP_SANDBOX_ROOT}/data/national_tier1_caps.xlsx"
+  NEITrends = "${INMAP_SANDBOX_ROOT}/data/state_tier1_caps.xlsx"
   SCCReference = "${INMAP_SANDBOX_ROOT}/data/SCCDownload-2021-0309-123938.csv"
   ConcentrationCache = "${SLCASpatialCache}/concentration"
   HealthCache = "${SLCASpatialCache}/health"
