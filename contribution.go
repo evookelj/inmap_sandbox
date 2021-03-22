@@ -36,6 +36,7 @@ func getConsumptionBySCC(ctx context.Context, s *eieio.Server, dem *eieiorpc.Dem
 
 // Get emissions by SCC for the specified year and location
 func getEmissionsBySCC(ctx context.Context, demand *eieiorpc.Vector, s *eieio.Server, year int32, loc eieiorpc.Location) (*mat.VecDense, error) {
+	log.Println("Getting emissions matrix")
 	emisRPC, err := s.EmissionsMatrix(ctx, &eieiorpc.EmissionsMatrixInput{
 		Demand:               demand,
 		Year:                 year,
@@ -45,6 +46,7 @@ func getEmissionsBySCC(ctx context.Context, demand *eieiorpc.Vector, s *eieio.Se
 	if err != nil {
 		return nil, errors.Wrap(err, "error getting emissions matrix")
 	}
+	log.Println("Got emissions matrix")
 	emis := rpc2mat(emisRPC)
 
 	if _, c := emis.Dims(); c != len(s.SCCs) {
@@ -93,16 +95,16 @@ func demAndEmissions(ctx context.Context, s *eieio.Server, demand *eieiorpc.Vect
 
 
 func contributionSideTest(ctx context.Context, s *eieio.Server, year int32, loc eieiorpc.Location, demand *eieiorpc.Vector) error {
-	/*
-	var eths []eieiorpc.Demograph
+	var eths []*eieiorpc.Demograph
 	for val := 0; val < len(eieiorpc.Ethnicity_value); val++ {
 		eth := eieiorpc.Ethnicity(val)
 		if eth != eieiorpc.Ethnicity_Ethnicity_All{
-			eths = append(eths, *ces.EthnicityToDemograph(eth))
+			eths = append(eths, ces.EthnicityToDemograph(eth))
 		}
 	}
-	dems := eths*/
+	dems := eths
 
+	/*
 	var deciles []*eieiorpc.Demograph
 	for val := 0; val < len(eieiorpc.Decile_value); val++ {
 		dec := eieiorpc.Decile(val)
@@ -111,6 +113,7 @@ func contributionSideTest(ctx context.Context, s *eieio.Server, year int32, loc 
 		}
 	}
 	dems := deciles
+	 */
 
 	emisByDemAndSCC, _, err := demAndEmissions(ctx, s, demand, dems, year, loc)
 	if err != nil {
