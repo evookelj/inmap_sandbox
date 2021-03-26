@@ -11,7 +11,7 @@ import (
 
 // var CONFIG = os.ExpandEnv("${INMAP_SANDBOX_ROOT}/data/my_config.toml")
 // var CONFIG = os.ExpandEnv("${INMAP_SANDBOX_ROOT}/data/new_config.toml")
-var CONFIG = os.ExpandEnv("${INMAP_SANDBOX_ROOT}/data/not_working_full.toml")
+var CONFIG = os.ExpandEnv("${INMAP_SANDBOX_ROOT}/data/iterating.toml")
 
 func getEIOServer() (*eieio.Server, error) {
 	f, err := os.Open(CONFIG)
