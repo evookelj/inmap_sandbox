@@ -21,31 +21,23 @@ func getExposureByPopulation(ctx context.Context, s *eieio.Server, year int32, l
 		return nil, err
 	}
 
-	populationNamesOutput, err := s.Populations(ctx, nil)
-	if err != nil {
-		return nil, err
-	}
-	popNames := populationNamesOutput.Names
-
+	popNames := append(s.CSTConfig.CensusPopColumns, s.CSTConfig.CensusIncomeCatColumns...)
 	populationGridsByPopName := make(map[string][]float64)
-	for _, popName := range popNames {
-		popOutputStruct, err := s.CSTConfig.PopulationIncidence(ctx, &eieiorpc.PopulationIncidenceInput{
-			Year:       year,
-			Population: popName,
-			// these two don't matter b/c we just care about population count
-			// TODO: Export method that just gets pop counts, don't waste computing on incidence
-			HR:         "NasariACS",
-			AQM:        "isrm",
-		})
-		if err != nil {
-			return nil, err
-		}
+	for i, popName := range popNames {
+			pop, err := s.CSTConfig.PopulationCount(ctx, &eieiorpc.PopulationCountInput{
+				Year:        2014, // year,
+				Population:  popName,
+				AQM:         "isrm",
+				IsIncomePop: i >= len(eieiorpc.Ethnicity_value), // based off gen of popNames above
+			})
+			if err != nil {
+				return nil, err
+			}
 
-		pop := popOutputStruct.GetPopulation()
-		if len(pop) != len(conc) {
-			return nil, fmt.Errorf("expected len(population)=len(concentrations); got %d != %d", len(pop), len(conc))
-		}
-		populationGridsByPopName[popName] = pop
+			if len(pop) != len(conc) {
+				return nil, fmt.Errorf("expected len(population)=len(concentrations); got %d != %d", len(pop), len(conc))
+			}
+			populationGridsByPopName[popName] = pop
 	}
 
 	popTotals := make(map[string]float64)
@@ -58,9 +50,11 @@ func getExposureByPopulation(ctx context.Context, s *eieio.Server, year int32, l
 		log.Printf("\t[Grid %d] [Concentration=%.2f]", gridIdx, concentrationAmt)
 		for _, popName := range popNames {
 			numIndividuals := populationGridsByPopName[popName][gridIdx]
-			popTotals[popName] += numIndividuals
 			exposureByPop[popName] += numIndividuals * concentrationAmt
-			log.Printf("\t\t[Population %s] %.2f ppl --> %.2f exposure", popName, numIndividuals, numIndividuals * concentrationAmt)
+			if popName != s.CSTConfig.CensusTotalPopColumn {
+				popTotals[popName] += numIndividuals
+			}
+			log.Printf("\t\t[Population %s] %.2f ppl --> %.2f exposure", popName, numIndividuals, numIndividuals*concentrationAmt)
 		}
 	}
 

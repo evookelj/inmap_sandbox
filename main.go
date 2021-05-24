@@ -27,12 +27,11 @@ func mainHelper() error {
 		return errors.Wrap(err, "error getting final demand")
 	}
 
-	err = contributionSideTest(ctx, s, YEAR, LOC, demand)
+	/*err = contributionSideTest(ctx, s, YEAR, LOC, demand)
 	if err != nil {
 		return err
-	}
+	}*/
 
-	/*
 	exposureByPop, err := getExposureByPopulation(ctx, s, YEAR, LOC, demand)
 	if err != nil {
 		return err
@@ -40,7 +39,6 @@ func mainHelper() error {
 	for popName, exposure := range *exposureByPop {
 		log.Printf("Pop name: %s\tExposure: %.2f", popName, exposure)
 	}
-	 */
 
 	return nil
 }
