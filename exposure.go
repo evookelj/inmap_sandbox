@@ -21,14 +21,14 @@ func getExposureByPopulation(ctx context.Context, s *eieio.Server, year int32, l
 		return nil, err
 	}
 
-	popNames := append(s.CSTConfig.CensusPopColumns, s.CSTConfig.CensusIncomeCatColumns...)
+	popNames := append(s.CSTConfig.CensusPopColumns, s.CSTConfig.CensusIncomeDecileNames...)
 	populationGridsByPopName := make(map[string][]float64)
 	for i, popName := range popNames {
 			pop, err := s.CSTConfig.PopulationCount(ctx, &eieiorpc.PopulationCountInput{
 				Year:        2014, // year,
 				Population:  popName,
 				AQM:         "isrm",
-				IsIncomePop: i >= len(eieiorpc.Ethnicity_value), // based off gen of popNames above
+				IsIncomePop: i >= len(s.CSTConfig.CensusPopColumns), // based off gen of popNames above
 			})
 			if err != nil {
 				return nil, err

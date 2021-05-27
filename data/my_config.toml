@@ -32,7 +32,11 @@ DefaultYear = 2011
   MaxCacheEntries=30
   DefaultFIPS = "00000"
 
-  CensusPopColumns = ["TotalPop", "WhiteNoLat", "Black", "Native", "Asian", "Latino"]
+  # CensusPopColumns = ["TotalPop", "WhiteNoLat", "Black", "Native", "Asian", "Latino"]
+  CensusTotalPopColumn = "TotalPop"
+  CensusIncomeCatColumns = ["WhiteNoLat", "Black", "Native", "Asian", "Latino"]
+  CensusIncomeDecileNames = ["IncomeDec0", "IncomeDec1", "IncomeDec2", "IncomeDec3", "IncomeDec4",
+    "IncomeDec5", "IncomeDec6", "IncomeDec7", "IncomeDec8", "IncomeDec9"]
 
   FugitiveDustSectors = ["test_adj"]
   [SpatialEIO.FugitiveDustAdjustment]
